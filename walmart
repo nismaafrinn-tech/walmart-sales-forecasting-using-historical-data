@@ -1,0 +1,165 @@
+# Upload the Dataset
+from google.colab import files
+uploaded = files.upload()
+
+# Load the Dataset
+import pandas as pd
+
+df = pd.read_csv("walmart.csv")
+df.head()
+# Shape of the dataset
+print("Shape:", df.shape)
+# Column names
+print("Columns:", df.columns.tolist())
+# Data types and non-null values
+df.info()
+# Summary statistics
+df.describe()
+
+# Check missing values
+print(df.isnull().sum())
+
+# Check duplicates
+print("Duplicate rows:", df.duplicated().sum())
+# Convert Date to datetime (FIXED)
+df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+
+# Extract year, month, week
+df['Year'] = df['Date'].dt.year
+df['Month'] = df['Date'].dt.month
+df['Week'] = df['Date'].dt.weekday
+
+print("Date conversion successful ")
+df.head()
+import seaborn as sns
+import matplotlib.pyplot as plt
+# Distribution of Weekly Sales
+sns.histplot(df['Weekly_Sales'], kde=True)
+plt.title("Distribution of Weekly Sales")
+plt.show()
+# Holiday vs Sales
+sns.boxplot(x='Holiday_Flag', y='Weekly_Sales', data=df)
+plt.title("Holiday vs Weekly Sales")
+plt.show()
+# Correlation heatmap
+plt.figure(figsize=(10,6))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap")
+plt.show()
+target = "Weekly_Sales"
+
+features = ['Store', 'Holiday_Flag', 'Temperature', 'Fuel_Price',
+            'CPI', 'Unemployment', 'Year', 'Month', 'Week']
+
+X = df[features]
+y = df[target]
+X.head()
+y.head()
+# Before scaling
+
+
+features = ['Store','Holiday_Flag','Temperature','Fuel_Price',
+            'CPI','Unemployment','Year','Month','Week']
+
+X = df[features]
+X.head()
+# After scaling
+
+X_scaled_df = pd.DataFrame(X_scaled, columns=X.columns)
+
+X_scaled_df.head()
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+y_pred_lr = lr.predict(X_test)
+# Linear Regression
+print("Linear Regression Results:")
+print("MAE:", mean_absolute_error(y_test, y_pred_lr))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_lr)))
+print("R2 Score:", r2_score(y_test, y_pred_lr))
+# RandomForestRegressor
+
+from sklearn.ensemble import RandomForestRegressor
+
+rf = RandomForestRegressor(n_estimators=200, random_state=42)
+rf.fit(X_train, y_train)
+
+y_pred_rf = rf.predict(X_test)
+
+print("Random Forest Results:")
+print("MAE:", mean_absolute_error(y_test, y_pred_rf))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_rf)))
+print("R2 Score:", r2_score(y_test, y_pred_rf))
+import pandas as pd
+
+importance = pd.DataFrame({
+    "Feature": features,
+    "Importance": rf.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+importance
+# Sample new input
+new_data = {
+    'Store': 1,
+    'Holiday_Flag': 0,
+    'Temperature': 75.0,
+    'Fuel_Price': 3.50,
+    'CPI': 220.0,
+    'Unemployment': 7.8,
+    'Year': 2012,
+    'Month': 11,
+    'Week': 4
+}
+
+new_df = pd.DataFrame([new_data])
+new_scaled = scaler.transform(new_df)
+
+predicted_sales = rf.predict(new_scaled)
+print(" Predicted Weekly Sales:", round(predicted_sales[0], 2))
+!pip install gradio
+# predict_sales
+
+import gradio as gr
+
+def predict_sales(Store, Holiday_Flag, Temperature, Fuel_Price, CPI, Unemployment, Year, Month, Week):
+    input_data = pd.DataFrame([{
+        "Store": Store,
+        "Holiday_Flag": Holiday_Flag,
+        "Temperature": Temperature,
+        "Fuel_Price": Fuel_Price,
+        "CPI": CPI,
+        "Unemployment": Unemployment,
+        "Year": Year,
+        "Month": Month,
+        "Week": Week
+    }])
+
+    input_scaled = scaler.transform(input_data)
+    prediction = rf.predict(input_scaled)
+    return round(prediction[0], 2)
+
+inputs = [
+    gr.Number(label="Store Number"),
+    gr.Radio([0,1], label="Holiday Flag (0=No, 1=Yes)"),
+    gr.Number(label="Temperature"),
+    gr.Number(label="Fuel Price"),
+    gr.Number(label="CPI"),
+    gr.Number(label="Unemployment"),
+    gr.Number(label="Year"),
+    gr.Number(label="Month"),
+    gr.Number(label="Week Day (0–6)")
+]
+
+output = gr.Number(label="Predicted Weekly Sales")
+
+gr.Interface(
+    fn=predict_sales,
+    inputs=inputs,
+    outputs=output,
+    title=" 🛒 Walmart Weekly Sales Predictor",
+    description="Enter store and economic details to predict weekly sales."
+).launch()
